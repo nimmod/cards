@@ -6,6 +6,7 @@ LLMs and digital tools make it easy to generate and collect ideas. But the easie
 
 **cards.py** introduces deliberate friction. You write by hand. You register each card manually. You link and sequence them with intent. These steps filter noise, force interpretation, and create durable mental anchors.
 
+[cards.py on GitHub](https://github.com/nimmod/cards)
 ---
 
 ## Deep Roots in Zettelkasten
@@ -69,6 +70,6 @@ This makes it ideal for high-fidelity interaction with language models:
 
 **cards.py** is not for fast capture or general note-taking. It’s for people whose workflows have been stretched thin by high-throughput idea environments—and who want to restore integrity, structure, and retention to their thinking.
 
-[cards.py on GitHub](https://github.com/nimmod/cards)
+
 
 
