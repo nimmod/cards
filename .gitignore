@@ -1,0 +1,24 @@
+# Python virtual environment
+.venv/
+env/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS X
+.DS_Store
+
+# Editor/IDE
+*.swp
+*.swo
+.idea/
+.vscode/
+*.bak
+
+# Environment/config files
+.env
+
+# Cards.py specific
+cards/backups/

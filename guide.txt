@@ -1,0 +1,88 @@
+**guide.txt**
+
+---
+
+**Zettelkasten Card System: Process Guide**
+
+---
+
+**How to Develop Card Bodies Without GPT Writing for You**
+
+1. **Prepare the card header**
+
+   * Write Title and one-sentence Summary on a blank card.
+   * Leave the Body field empty.
+
+2. **Generate an outline using GPT**
+
+   * Provide GPT only the Title and Summary.
+   * Request 3–5 bullet points expanding the Summary.
+
+3. **Ask for probing questions**
+
+   * For each outline bullet, prompt GPT for 2–3 questions that challenge assumptions, require evidence, or clarify relationships.
+
+4. **Answer questions yourself**
+
+   * Write brief answers in your own words.
+
+5. **Identify gaps with GPT**
+
+   * Send answers and the outline to GPT.
+   * Ask GPT to list missing points or logical gaps.
+
+6. **Draft Body paragraphs**
+
+   * Write one paragraph per outline bullet.
+   * Use active voice.
+
+7. **Iterate with targeted GPT feedback**
+
+   * Give GPT your draft and the outline.
+   * Ask it to flag unclear, unsupported, or redundant sentences.
+   * Revise as needed.
+
+8. **Add examples and counter-examples**
+
+   * Request analogies or counter-examples.
+   * Select only those that clarify, discard the rest.
+
+9. **Final alignment check**
+
+   * Ask GPT to summarize how well the Body aligns with the Summary.
+   * Adjust text until you are satisfied with the match.
+
+10. **Commit and integrate**
+
+    * Hand-write the final Body on your card.
+    * Register it digitally; tag the card “integrated.”
+
+---
+
+**Daily Process**
+
+1. Empty the capture inbox.
+2. For each entry, decide: discard, or create a card (idea or literature).
+3. Generate ID (optionally under a parent).
+4. Fill Title, Summary, and Tags; outline Body.
+5. Add Context and Next action.
+6. Register using `cards.py register`.
+7. Confirm with `cards.py show`.
+
+---
+
+**Weekly Process**
+
+1. Run `cards.py list` to view recent cards.
+2. For every card older than 7 days, ensure:
+
+   * At least one Link or SequenceNext
+   * Sufficient tags
+3. Link orphans; sequence derived ideas.
+4. Convert literature insights into idea cards.
+5. Write a synthesis paragraph for all cards tagged “pending”; then tag as “integrated.”
+6. Verify backups and review the index for consistency.
+
+---
+
+*Edit this guide as your process evolves. All changes will be reflected in the `cards.py guide` output.*
