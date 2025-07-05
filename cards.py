@@ -14,24 +14,39 @@ import fcntl
 import shutil
 import sys
 from pathlib import Path
-
+import tempfile
+import os
 import yaml
 
 # ───────────────────────── Configuration ──────────────────────────
 SCRIPT_DIR = Path(__file__).resolve().parent
 GUIDE_FILE = SCRIPT_DIR / "guide.txt"
 
-CARD_DIR = Path.home() / "cards"; CARD_DIR.mkdir(exist_ok=True)
-BACKUP_DIR = CARD_DIR / "backups"; BACKUP_DIR.mkdir(exist_ok=True)
+# Default directories (will be overridden in test mode)
+CARD_DIR = Path.home() / "cards"
+CARD_DIR.mkdir(exist_ok=True)
+BACKUP_DIR = CARD_DIR / "backups"
+BACKUP_DIR.mkdir(exist_ok=True)
 INDEX_FILE = CARD_DIR / "index.yaml"
 LOCK_FILE = CARD_DIR / "index.yaml.lock"
 BACKUP_LIMIT = 50
+
+IS_TEST_MODE = False
 
 FIELDS = [
     "ID", "Date", "Type", "Title", "Summary", "Tags",
     "Links", "SequenceNext", "Context", "Next", "Body",
 ]
 TYPES = ["idea", "literature"]
+
+def set_test_mode():
+    global CARD_DIR, BACKUP_DIR, INDEX_FILE, LOCK_FILE, IS_TEST_MODE
+    d = Path(tempfile.mkdtemp(prefix="cards_test_"))
+    CARD_DIR = d
+    BACKUP_DIR = CARD_DIR / "backups"; BACKUP_DIR.mkdir(exist_ok=True)
+    INDEX_FILE = CARD_DIR / "index.yaml"
+    LOCK_FILE = CARD_DIR / "index.yaml.lock"
+    IS_TEST_MODE = True
 
 # ───────────────────────── Utility ────────────────────────────────
 
@@ -49,6 +64,17 @@ def _backup(path: Path):
         files = sorted(BACKUP_DIR.glob(f"{path.stem}_*.yaml"))
         for stale in files[:-BACKUP_LIMIT]:
             stale.unlink(missing_ok=True)
+
+def edit_body_with_editor(initial=""):
+    editor = os.environ.get("EDITOR", "nano")
+    with tempfile.NamedTemporaryFile(suffix=".tmp", delete=False, mode="w+") as tf:
+        tf.write(initial)
+        tf.flush()
+        os.system(f"{editor} {tf.name}")
+        tf.seek(0)
+        body = tf.read()
+    os.unlink(tf.name)
+    return body
 
 # ─────────────────────── ID generation ────────────────────────────
 
@@ -98,6 +124,7 @@ def save_index(idx: dict):
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="cards.py", formatter_class=argparse.RawTextHelpFormatter)
+    p.add_argument("--test-mode", action="store_true", help="Run in test mode (uses temp card storage)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("genid").add_argument("parent", nargs="?")
@@ -113,7 +140,7 @@ def build_parser() -> argparse.ArgumentParser:
     reg.add_argument("-p", "--parent")
     reg.add_argument("-c", "--context", default="")
     reg.add_argument("-n", "--next", default="")
-    reg.add_argument("-b", "--body", required=True)
+    reg.add_argument("-b", "--body", default="")
 
     upd = sub.add_parser("update")
     upd.add_argument("id")
@@ -123,9 +150,15 @@ def build_parser() -> argparse.ArgumentParser:
     upd.add_argument("--add-tag", nargs="*"); upd.add_argument("--remove-tag", nargs="*")
     upd.add_argument("--add-link", nargs="*"); upd.add_argument("--remove-link", nargs="*")
 
+
     sub.add_parser("list")
     sub.add_parser("index")
     g = sub.add_parser("guide")
+
+    d = sub.add_parser("delete")
+    d.add_argument("id", help="Card ID to delete")
+    d.add_argument("--force", action="store_true", help="Delete without confirmation")
+
 
     s = sub.add_parser("show"); s.add_argument("id")
     f = sub.add_parser("find"); f.add_argument("-g", "--tags", nargs="+", required=True)
@@ -144,8 +177,13 @@ def cmd_register(a):
     if a.id and a.parent:
         sys.exit("Cannot supply both ID and --parent")
     cid = a.id or generate_id(a.parent)
-    if not a.title.strip() or not a.body.strip():
-        sys.exit("Title and Body cannot be empty")
+    if not a.title.strip():
+        sys.exit("Title cannot be empty")
+    body = a.body.strip()
+    if not body:
+        body = edit_body_with_editor()
+        if not body.strip():
+            sys.exit("Body cannot be empty")
     idx = load_index()
     if cid in idx:
         sys.exit("ID exists")
@@ -153,7 +191,7 @@ def cmd_register(a):
     data.update(ID=cid, Date=datetime.date.today().isoformat(), Type=a.type,
                 Title=a.title.strip(), Summary=a.summary.strip(), Tags=a.tags,
                 Links=a.links, SequenceNext=a.sequence, Context=a.context.strip(),
-                Next=a.next.strip(), Body=a.body.strip())
+                Next=a.next.strip(), Body=body)
     write_card(data); idx[cid] = data["Title"]; save_index(idx); print(cid)
 
 
@@ -197,6 +235,24 @@ def cmd_update(a):
         print(f"Updated {card['ID']}")
     else:
         print("No changes applied")
+
+def cmd_delete(a):
+    path = CARD_DIR / f"{a.id}.yaml"
+    if not path.exists():
+        sys.exit("Card not found")
+    if not a.force:
+        resp = input(f"Delete card {a.id} ({path})? [y/N]: ").strip().lower()
+        if resp != "y":
+            print("Aborted")
+            return
+    # Remove from index
+    idx = load_index()
+    idx.pop(a.id, None)
+    save_index(idx)
+    # Remove file
+    path.unlink()
+    print(f"Deleted card {a.id}")
+
 
 
 def cmd_list(_):
@@ -274,6 +330,8 @@ __all__ = [
 def main():
     parser = build_parser()
     args = parser.parse_args()
+    if getattr(args, "test_mode", False):
+        set_test_mode()
     dispatch = {
         "genid": cmd_genid,
         "register": cmd_register,
@@ -286,9 +344,9 @@ def main():
         "backlinks": cmd_backlinks,
         "index": cmd_index,
         "guide": cmd_guide,
+        "delete": cmd_delete,
     }
     dispatch[args.cmd](args)
 
 if __name__ == "__main__":
     main()
-

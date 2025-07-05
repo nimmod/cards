@@ -94,4 +94,19 @@ def test_link_backlinks(cards, capsys):
     out, _ = capsys.readouterr()
     assert a in out
 
+def test_delete_card(cards):
+    cid = cards.generate_id()
+    cards.write_card({
+        "ID": cid, "Date": "2025-07-01", "Type": "idea", "Title": "DEL",
+        "Summary": "", "Tags": [], "Links": [], "SequenceNext": "",
+        "Context": "", "Next": "", "Body": "b"})
+    # Use force so no prompt
+    args = type("D", (), {"id": cid, "force": True})()
+    cards.cmd_delete(args)
+    # Card should no longer exist
+    assert cards.read_card(cid) is None
+    # Also not in index
+    idx = cards.load_index()
+    assert cid not in idx
+
 
